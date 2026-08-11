@@ -56,11 +56,13 @@ export default function LandingPage() {
         });
         if (authError) throw authError;
 
+        let registeredGarageName = garageName || 'My Garage';
+
         if (authData.user) {
           // 2. Explicitly create the garage record
           const { data: garageData, error: garageError } = await supabase
             .from('garages')
-            .insert([{ name: garageName || 'My Garage', email: email }])
+            .insert([{ name: registeredGarageName, email: email }])
             .select()
             .single();
 
@@ -79,6 +81,17 @@ export default function LandingPage() {
             ]);
 
           if (profileError) throw profileError;
+
+          // 4. Trigger email notification to admin via Resend API route
+          try {
+            await fetch('/api/notify-signup', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ garageName: registeredGarageName, email }),
+            });
+          } catch (emailErr) {
+            console.error('Email alert trigger failed:', emailErr);
+          }
         }
 
         // If email confirmation is disabled or automatic session is active
