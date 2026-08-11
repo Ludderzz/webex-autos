@@ -22,7 +22,7 @@ export default function Navbar({ onNewJobClick, showNewJobButton = true }: Navba
           <Wrench className="w-5 h-5" />
         </div>
         <div>
-          <h1 className="text-base font-bold font-mono tracking-wider text-white">GARAGE LAB</h1>
+          <h1 className="text-base font-bold font-mono tracking-wider text-white">WEBEX AUTO</h1>
           <span className="text-xs text-neutral-400">Command Center</span>
         </div>
       </div>

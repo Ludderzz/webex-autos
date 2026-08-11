@@ -111,7 +111,7 @@ export default function LandingPage() {
           <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
             <Wrench className="w-5 h-5" />
           </div>
-          <span className="font-mono font-bold tracking-wider text-sm">GARAGE LAB</span>
+          <span className="font-mono font-bold tracking-wider text-sm">WEBEX AUTO</span>
         </div>
         
         <div className="flex items-center gap-3">
@@ -291,7 +291,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="w-full max-w-6xl mx-auto px-6 py-6 border-t border-neutral-900 text-center text-xs text-neutral-500">
-        <p>© 2026 Garage Lab. Built for independent workshops.</p>
+        <p>© 2026 WebEx Auto. Built for independent workshops.</p>
       </footer>
 
       {/* Auth Modal (Login / Sign Up) */}
@@ -359,7 +359,7 @@ export default function LandingPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="mechanic@garagelab.co.uk"
+                    placeholder="mechanic@webexauto.co.uk"
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-amber-500 transition"
                   />
                 </div>

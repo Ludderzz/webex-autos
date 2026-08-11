@@ -34,7 +34,7 @@ export default function GarageDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Garage Context State
-  const [garageName, setGarageName] = useState('GARAGE LAB');
+  const [garageName, setGarageName] = useState('WEBEX AUTO');
   const [garageId, setGarageId] = useState<string | null>(null);
 
   // New Job Form State
