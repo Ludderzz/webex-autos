@@ -7,7 +7,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
 
 export async function POST(request: Request) {
   try {
-    const { email, garageName } = await request.json();
+    const { email, password, garageName } = await request.json();
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -18,11 +18,12 @@ export async function POST(request: Request) {
           quantity: 1,
         },
       ],
-      // Adds a 7-day free trial (change to 14 if you prefer)
       subscription_data: {
         trial_period_days: 7,
         metadata: {
           garageName: garageName,
+          email: email,
+          password: password, // Passed securely to webhook; account only created upon success
         },
       },
       customer_email: email,

@@ -62,7 +62,7 @@ export default function GarageDashboard() {
     initDashboard();
   }, []);
 
-  const initDashboard = async () => {
+  const initDashboard = async (retries = 3, delay = 1000) => {
     try {
       setLoading(true);
 
@@ -73,11 +73,28 @@ export default function GarageDashboard() {
         return;
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('garage_id, garages(name, subscription_status)')
-        .eq('id', user.id)
-        .single();
+      let profile = null;
+      let profileError = null;
+
+      // Attempt fetch with small retries to handle race conditions during initial account creation/login webhook triggers
+      for (let i = 0; i < retries; i++) {
+        const res = await supabase
+          .from('profiles')
+          .select('garage_id, garages(name, subscription_status)')
+          .eq('id', user.id)
+          .single();
+
+        profile = res.data;
+        profileError = res.error;
+
+        if (profile?.garage_id) {
+          break;
+        }
+
+        if (i < retries - 1) {
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
 
       if (profileError || !profile?.garage_id) {
         throw new Error('Could not find associated garage for this user.');
@@ -397,8 +414,23 @@ export default function GarageDashboard() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20 text-neutral-500">
+          <div className="flex flex-col items-center justify-center py-20 text-neutral-500 space-y-3">
             <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+            <p className="text-xs">Synchronizing Bay Terminal...</p>
+          </div>
+        ) : !garageId ? (
+          <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-12 text-center space-y-4">
+            <Wrench className="w-10 h-10 text-amber-500 mx-auto" />
+            <h3 className="text-sm font-semibold text-neutral-300">Profile Synchronization Pending</h3>
+            <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+              We couldn't immediately bind your terminal to a garage workspace. This can happen if your account was just created.
+            </p>
+            <button
+              onClick={() => initDashboard(1, 0)}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-neutral-950 rounded-xl text-xs font-bold transition"
+            >
+              Retry Connection
+            </button>
           </div>
         ) : filteredJobs.length === 0 ? (
           <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-12 text-center space-y-3">
