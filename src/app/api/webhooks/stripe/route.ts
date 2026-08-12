@@ -91,16 +91,20 @@ export async function POST(request: Request) {
             }
 
             if (garage) {
-              // 3. LINK PROFILE TO THE NEW GARAGE ID
-              const { error: profileError } = await supabaseAdmin
+            // 3. CREATE OR LINK PROFILE TO THE NEW GARAGE ID
+                const { error: profileError } = await supabaseAdmin
                 .from('profiles')
-                .update({ garage_id: garage.id })
-                .eq('id', userId);
+                .upsert({
+                    id: userId,
+                    email: customerEmail,
+                    garage_id: garage.id,
+                    role: 'admin',
+                });
 
-              if (profileError) {
-                console.error('SUPABASE PROFILE UPDATE ERROR:', profileError);
+                if (profileError) {
+                console.error('SUPABASE PROFILE UPSERT ERROR:', profileError);
                 return NextResponse.json({ error: profileError.message }, { status: 400 });
-              }
+                }
             }
           }
         }
