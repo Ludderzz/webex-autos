@@ -122,33 +122,39 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col justify-between selection:bg-amber-500 selection:text-neutral-950">
-      {/* Header / Nav */}
-      <header className="w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between border-b border-neutral-900">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
-            <Wrench className="w-5 h-5" />
-          </div>
-          <span className="font-mono font-bold tracking-wider text-sm">WEBEX AUTO</span>
+<div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col justify-between selection:bg-amber-500 selection:text-neutral-950">
+    {/* Announcement Bar */}
+    <div className="w-full bg-amber-500 text-neutral-950 px-4 py-2 text-xs font-bold tracking-wide flex items-center justify-center gap-2 shadow-sm">
+      <span className="bg-neutral-950 text-amber-400 text-[10px] font-mono px-2 py-0.5 rounded-full uppercase">New</span>
+      <span>WebEx Auto is now available as a Progressive Web App (PWA)! Install it on your device for quick access.</span>
+    </div>
+
+    {/* Header / Nav */}
+    <header className="w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between border-b border-neutral-900">
+      <div className="flex items-center gap-3">
+        <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+          <Wrench className="w-5 h-5" />
         </div>
-        
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => openModal('login')}
-            className="flex items-center gap-2 text-xs font-semibold text-neutral-300 hover:text-white transition px-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-amber-500/50 shadow-sm"
-          >
-            <Lock className="w-3.5 h-3.5 text-amber-500" />
-            <span>Dashboard Login</span>
-          </button>
-          <button
-            onClick={() => openModal('signup')}
-            className="hidden sm:flex items-center gap-2 text-xs font-semibold text-neutral-950 transition px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 font-bold shadow-sm"
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>Start Free Trial</span>
-          </button>
-        </div>
-      </header>
+        <span className="font-mono font-bold tracking-wider text-sm">WEBEX AUTO</span>
+      </div>
+      
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => openModal('login')}
+          className="flex items-center gap-2 text-xs font-semibold text-neutral-300 hover:text-white transition px-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-amber-500/50 shadow-sm"
+        >
+          <Lock className="w-3.5 h-3.5 text-amber-500" />
+          <span>Dashboard Login</span>
+        </button>
+        <button
+          onClick={() => openModal('signup')}
+          className="hidden sm:flex items-center gap-2 text-xs font-semibold text-neutral-950 transition px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 font-bold shadow-sm"
+        >
+          <UserPlus className="w-3.5 h-3.5" />
+          <span>Start Free Trial</span>
+        </button>
+      </div>
+    </header>
 
       {/* Hero Section */}
       <main className="max-w-4xl mx-auto px-6 py-16 text-center space-y-16">
