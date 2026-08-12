@@ -37,19 +37,35 @@ export async function POST(request: Request) {
         const customerId = session.customer as string;
         const subscriptionId = session.subscription as string;
         
-        // Pull metadata passed securely through checkout session/subscription
-        const garageName = session.metadata?.garageName;
-        const password = session.metadata?.password;
+        // Pull metadata passed securely through checkout session / subscription
+        let garageName = session.metadata?.garageName;
+        let password = session.metadata?.password;
+
+        // If metadata is nested in the subscription (common with trials/subscriptions)
+        if ((!garageName || !password) && session.subscription) {
+          try {
+            const subscriptionObj = await stripe.subscriptions.retrieve(session.subscription as string);
+            garageName = garageName || subscriptionObj.metadata?.garageName;
+            password = password || subscriptionObj.metadata?.password;
+          } catch (subErr) {
+            console.error('Failed to retrieve subscription metadata:', subErr);
+          }
+        }
 
         if (customerEmail && password) {
-          // 1. CREATE SUPABASE AUTH USER NOW (Only on successful payment/trial confirmation)
+          // 1. CREATE SUPABASE AUTH USER NOW
           const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email: customerEmail,
             password: password,
             email_confirm: true,
           });
 
-          if (!authError && authData.user) {
+          if (authError) {
+            console.error('SUPABASE AUTH ERROR:', authError);
+            return NextResponse.json({ error: authError.message }, { status: 400 });
+          }
+
+          if (authData.user) {
             const userId = authData.user.id;
 
             // 2. CREATE THE GARAGE ROW
@@ -67,12 +83,22 @@ export async function POST(request: Request) {
               .select()
               .single();
 
-            if (!garageError && garage) {
+            if (garageError) {
+              console.error('SUPABASE GARAGE INSERT ERROR:', garageError);
+              return NextResponse.json({ error: garageError.message }, { status: 400 });
+            }
+
+            if (garage) {
               // 3. LINK PROFILE TO THE NEW GARAGE ID
-              await supabaseAdmin
+              const { error: profileError } = await supabaseAdmin
                 .from('profiles')
                 .update({ garage_id: garage.id })
                 .eq('id', userId);
+
+              if (profileError) {
+                console.error('SUPABASE PROFILE UPDATE ERROR:', profileError);
+                return NextResponse.json({ error: profileError.message }, { status: 400 });
+              }
             }
           }
         }
@@ -82,15 +108,18 @@ export async function POST(request: Request) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
-        const status = subscription.status; // 'active', 'past_due', 'canceled', etc.
+        const status = subscription.status;
 
-        // Map stripe status to your app status
         const appStatus = status === 'active' || status === 'trialing' ? 'active' : 'inactive';
 
-        await supabaseAdmin
+        const { error: subUpdateError } = await supabaseAdmin
             .from('garages')
             .update({ subscription_status: appStatus })
             .eq('stripe_customer_id', customerId);
+
+        if (subUpdateError) {
+          console.error('SUPABASE SUB UPDATE ERROR:', subUpdateError);
+        }
         break;
       }
 
@@ -98,11 +127,14 @@ export async function POST(request: Request) {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
 
-        // Instantly lock account when subscription is fully canceled or deleted
-        await supabaseAdmin
+        const { error: subDeleteError } = await supabaseAdmin
             .from('garages')
             .update({ subscription_status: 'inactive' })
             .eq('stripe_customer_id', customerId);
+
+        if (subDeleteError) {
+          console.error('SUPABASE SUB DELETE ERROR:', subDeleteError);
+        }
         break;
       }
 
