@@ -1,21 +1,42 @@
 {
-  "name": "Webex Auto Garage",
-  "short_name": "WebexAuto",
-  "description": "Garage and fleet management command center",
+  "id": "/",
+  "name": "WebEx Auto Garage",
+  "short_name": "WebExAuto",
+  "description": "Streamlined garage management software for auto repair shops. Track active bay repairs, customer vehicles, job status, and workshop diagnostics in real time.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
-  "theme_color": "#f59e0b",
+  "theme_color": "#0a0a0a",
+  "orientation": "any",
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "WebEx Auto Dashboard (Desktop View)"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "WebEx Auto Dashboard (Mobile View)"
     }
   ]
 }
