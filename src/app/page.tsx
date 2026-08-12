@@ -62,7 +62,7 @@ export default function LandingPage() {
           // 2. Explicitly create the garage record
           const { data: garageData, error: garageError } = await supabase
             .from('garages')
-            .insert([{ name: registeredGarageName, email: email }])
+            .insert([{ name: registeredGarageName, email: email, subscription_status: 'trialing' }])
             .select()
             .single();
 
@@ -94,17 +94,22 @@ export default function LandingPage() {
           }
         }
 
-        // If email confirmation is disabled or automatic session is active
-        if (authData.session) {
-          router.push('/dashboard');
+        // 5. Redirect straight to Stripe Checkout for the £50/mo subscription + free trial
+        const checkoutRes = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, garageName: registeredGarageName }),
+        });
+        const checkoutData = await checkoutRes.json();
+        
+        if (checkoutData.url) {
+          window.location.href = checkoutData.url; // Redirects user to Stripe hosted checkout
         } else {
-          setSuccessMsg('Account created! Check your email to confirm or sign in now.');
-          setAuthMode('login');
+          throw new Error(checkoutData.error || 'Failed to create payment session');
         }
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to authenticate');
-    } finally {
       setLoading(false);
     }
   };
@@ -154,7 +159,7 @@ export default function LandingPage() {
         >
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
             <Zap className="w-3.5 h-3.5" />
-            <span>No Tiers. No Bloat. £50/month All Access.</span>
+            <span>7-Day Free Trial • £50/month All Access.</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-white max-w-2xl mx-auto leading-tight">
@@ -170,7 +175,7 @@ export default function LandingPage() {
               onClick={() => openModal('signup')}
               className="w-full sm:w-auto px-8 py-4 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-sm rounded-xl shadow-lg shadow-amber-500/10 transition flex items-center justify-center gap-2 group"
             >
-              <span>Get Started Now (£50/mo)</span>
+              <span>Start Free Trial (£50/mo)</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
             </button>
             <button
@@ -263,7 +268,7 @@ export default function LandingPage() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
 
             <div className="space-y-2">
-              <span className="text-xs font-mono uppercase tracking-widest text-amber-500">All-Inclusive License</span>
+              <span className="text-xs font-mono uppercase tracking-widest text-amber-500">7-Day Free Trial Included</span>
               <h3 className="text-2xl font-bold text-white">Everything You Need. One Flat Rate.</h3>
               <p className="text-xs text-neutral-400">No per-user fees, no hidden add-ons. Full workshop management unlocked.</p>
             </div>
@@ -296,7 +301,7 @@ export default function LandingPage() {
               onClick={() => openModal('signup')}
               className="w-full sm:w-auto px-8 py-3.5 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs rounded-xl shadow-lg transition"
             >
-              Get Started Now
+              Start Free Trial Now
             </button>
           </div>
         </div>
@@ -323,7 +328,7 @@ export default function LandingPage() {
                     {authMode === 'login' ? 'Dashboard Access' : 'Create Garage Account'}
                   </h3>
                   <p className="text-xs text-neutral-400">
-                    {authMode === 'login' ? 'Sign in to your garage dashboard.' : 'Start your £50/month all-access subscription.'}
+                    {authMode === 'login' ? 'Sign in to your garage dashboard.' : 'Start your 7-day free trial (£50/mo after).'}
                   </p>
                 </div>
                 <button
@@ -399,10 +404,10 @@ export default function LandingPage() {
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>{authMode === 'login' ? 'Authenticating...' : 'Creating Account...'}</span>
+                      <span>{authMode === 'login' ? 'Authenticating...' : 'Redirecting to Checkout...'}</span>
                     </>
                   ) : (
-                    <span>{authMode === 'login' ? 'Sign In to Dashboard' : 'Register & Start Setup'}</span>
+                    <span>{authMode === 'login' ? 'Sign In to Dashboard' : 'Start Free Trial & Register'}</span>
                   )}
                 </button>
               </form>
@@ -416,7 +421,7 @@ export default function LandingPage() {
                       onClick={() => { setAuthMode('signup'); setErrorMsg(''); setSuccessMsg(''); }}
                       className="text-amber-400 font-semibold hover:underline"
                     >
-                      Sign Up (£50/mo)
+                      Sign Up (Free Trial)
                     </button>
                   </p>
                 ) : (

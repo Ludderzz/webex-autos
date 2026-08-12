@@ -13,7 +13,12 @@ import {
   FileText,
   Receipt,
   Trash2,
-  LogOut
+  LogOut,
+  Settings,
+  CreditCard,
+  Building,
+  CheckCircle2,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -32,10 +37,17 @@ export default function GarageDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'in_progress' | 'completed'>('in_progress');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Garage Context State
   const [garageName, setGarageName] = useState('WEBEX AUTO');
   const [garageId, setGarageId] = useState<string | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string>('trialing');
+
+  // Settings Editable State
+  const [updatedGarageName, setUpdatedGarageName] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsMsg, setSettingsMsg] = useState('');
 
   // New Job Form State
   const [regPlate, setRegPlate] = useState('');
@@ -63,7 +75,7 @@ export default function GarageDashboard() {
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('garage_id, garages(name)')
+        .select('garage_id, garages(name, subscription_status)')
         .eq('id', user.id)
         .single();
 
@@ -73,10 +85,14 @@ export default function GarageDashboard() {
 
       setGarageId(profile.garage_id);
       
-      // Extract garage name from relation if available
-      const fetchedGarageName = (profile.garages as any)?.name;
-      if (fetchedGarageName) {
-        setGarageName(fetchedGarageName);
+      // Extract garage name & subscription status from relation if available
+      const fetchedGarage = (profile.garages as any);
+      if (fetchedGarage?.name) {
+        setGarageName(fetchedGarage.name);
+        setUpdatedGarageName(fetchedGarage.name);
+      }
+      if (fetchedGarage?.subscription_status) {
+        setSubscriptionStatus(fetchedGarage.subscription_status);
       }
 
       // 2. Fetch jobs filtered specifically by this garage_id
@@ -118,6 +134,49 @@ export default function GarageDashboard() {
     router.refresh();
   };
 
+  const handleUpdateGarageSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!garageId || !updatedGarageName.trim()) return;
+
+    try {
+      setSavingSettings(true);
+      setSettingsMsg('');
+
+      const { error } = await supabase
+        .from('garages')
+        .update({ name: updatedGarageName.trim() })
+        .eq('id', garageId);
+
+      if (error) throw error;
+
+      setGarageName(updatedGarageName.trim());
+      setSettingsMsg('Garage settings updated successfully.');
+    } catch (err: any) {
+      console.error('Error updating garage name:', err);
+      setSettingsMsg(err.message || 'Failed to update settings.');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleManageBilling = async () => {
+    try {
+      const res = await fetch('/api/create-portal-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Failed to open billing portal.');
+      }
+    } catch (err) {
+      console.error('Portal error:', err);
+      alert('Could not open Stripe billing portal.');
+    }
+  };
+
   const handleAddPartRow = () => {
     setParts([...parts, { name: '', retailPrice: '', quantity: '1' }]);
   };
@@ -139,7 +198,6 @@ export default function GarageDashboard() {
     try {
       setSubmitting(true);
 
-      // Insert Job directly via Supabase client with the garage_id explicitly included
       const { data: newJob, error: jobError } = await supabase
         .from('jobs')
         .insert([
@@ -159,7 +217,6 @@ export default function GarageDashboard() {
       if (jobError) throw jobError;
       const newJobId = newJob.id;
 
-      // If user added dynamic parts, insert them directly into job_parts table
       if (parts.length > 0) {
         const formattedParts = parts
           .filter((p) => p.name.trim() !== '')
@@ -180,7 +237,6 @@ export default function GarageDashboard() {
         }
       }
 
-      // Reset Form State
       setRegPlate('');
       setVehicleModel('');
       setCustomerName('');
@@ -265,6 +321,15 @@ export default function GarageDashboard() {
 
         <div className="flex items-center gap-3">
           <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="flex items-center gap-2 text-xs font-semibold text-neutral-300 hover:text-white bg-neutral-900 border border-neutral-800 hover:border-amber-500/50 px-3.5 py-2.5 rounded-xl transition"
+            title="Garage Settings"
+          >
+            <Settings className="w-4 h-4 text-amber-500" />
+            <span className="hidden sm:inline">Settings</span>
+          </button>
+
+          <button
             onClick={() => setIsModalOpen(true)}
             className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-neutral-950 px-4 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-amber-500/10 transition"
           >
@@ -285,7 +350,6 @@ export default function GarageDashboard() {
 
       {/* Main Command Center Content */}
       <main className="flex-1 max-w-5xl w-full mx-auto p-6 space-y-6">
-        {/* Search and Tabs Header */}
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
           <div className="flex items-center gap-1 bg-neutral-900 border border-neutral-800 p-1 rounded-xl w-full sm:w-auto">
             <button
@@ -332,7 +396,6 @@ export default function GarageDashboard() {
           </div>
         </div>
 
-        {/* Jobs Grid / List */}
         {loading ? (
           <div className="flex items-center justify-center py-20 text-neutral-500">
             <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
@@ -384,7 +447,6 @@ export default function GarageDashboard() {
                   </div>
                 </div>
 
-                {/* Always available download / document action triggers on every card */}
                 <div className="flex items-center gap-2 pt-3 border-t border-neutral-800">
                   <button
                     onClick={() => handleDownloadCardDoc(job, 'report')}
@@ -406,6 +468,112 @@ export default function GarageDashboard() {
           </div>
         )}
       </main>
+
+      {/* Settings Modal Overlay */}
+      <AnimatePresence>
+        {isSettingsOpen && (
+          <div className="fixed inset-0 z-50 bg-neutral-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-6 my-8"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+                    <Settings className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-white">Garage Settings</h2>
+                    <p className="text-xs text-neutral-400">Manage subscription and profile.</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsSettingsOpen(false)}
+                  className="p-2 rounded-xl bg-neutral-800 text-neutral-400 hover:text-white transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {settingsMsg && (
+                <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 p-3 rounded-xl text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <span>{settingsMsg}</span>
+                </div>
+              )}
+
+              {/* Subscription Status Card */}
+              <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-neutral-300">
+                    <CreditCard className="w-4 h-4 text-amber-500" />
+                    <span>Subscription Plan</span>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider ${
+                    subscriptionStatus === 'active' 
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      : subscriptionStatus === 'trialing'
+                      ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
+                  }`}>
+                    {subscriptionStatus}
+                  </span>
+                </div>
+
+                <p className="text-xs text-neutral-400">
+                  {subscriptionStatus === 'trialing' 
+                    ? 'Your 7-day free trial is currently active. Full access unlocked (£50/mo after).' 
+                    : subscriptionStatus === 'active'
+                    ? 'Your all-access monthly subscription is active.'
+                    : 'Manage your plan status below.'}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={handleManageBilling}
+                  className="w-full py-2.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-200 hover:text-white border border-neutral-800 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2"
+                >
+                  <span>Manage Billing & Cancel / Pause</span>
+                </button>
+              </div>
+
+              {/* Edit Garage Name Form */}
+              <form onSubmit={handleUpdateGarageSettings} className="space-y-4 pt-2 border-t border-neutral-800">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                    <Building className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Garage / Workshop Name</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={updatedGarageName}
+                    onChange={(e) => setUpdatedGarageName(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-amber-500 transition"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={savingSettings}
+                  className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-50 text-xs"
+                >
+                  {savingSettings ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving Changes...</span>
+                    </>
+                  ) : (
+                    <span>Update Garage Name</span>
+                  )}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* New Job Modal Overlay */}
       <AnimatePresence>
@@ -485,7 +653,6 @@ export default function GarageDashboard() {
                   </div>
                 </div>
 
-                {/* Dynamic Parts Section */}
                 <div className="space-y-3 pt-2 border-t border-neutral-800">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-semibold text-amber-400 uppercase tracking-wider">

@@ -19,10 +19,11 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'WebEx Auto' }],
   creator: 'WebEx Auto',
+  manifest: '/manifest.json', // Added PWA manifest link
   openGraph: {
     type: 'website',
     locale: 'en_GB',
-    url: 'https://garage.webcircuit.co.uk', // Adjust domain as needed
+    url: 'https://garage.webcircuit.co.uk',
     title: 'WebEx Auto // Garage Management & Repair Terminal',
     description: 'Real-time vehicle repair tracking, bay diagnostics, and workshop management software.',
     siteName: 'WebEx Auto',
@@ -60,6 +61,26 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased bg-neutral-950 text-neutral-100 min-h-screen">
         {children}
+
+        {/* Service Worker Registration Script */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(
+                    function(registration) {
+                      console.log('ServiceWorker registration successful');
+                    },
+                    function(err) {
+                      console.log('ServiceWorker registration failed: ', err);
+                    }
+                  );
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
